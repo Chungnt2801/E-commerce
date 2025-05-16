@@ -1,56 +1,47 @@
 package chungnt.own.vn.e_commerce.auth_service.controller;
 
-import chungnt.own.vn.e_commerce.auth_service.dto.LoginRequest;
-import chungnt.own.vn.e_commerce.auth_service.dto.RegisterRequest;
+import chungnt.own.vn.e_commerce.auth_service.dto.AuthRequest;
+import chungnt.own.vn.e_commerce.auth_service.dto.AuthResponse;
 import chungnt.own.vn.e_commerce.auth_service.entity.User;
-import chungnt.own.vn.e_commerce.auth_service.repository.UserRepository;
-import chungnt.own.vn.e_commerce.auth_service.security.JwtUtil;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import chungnt.own.vn.e_commerce.auth_service.service.UserService;
+import chungnt.own.vn.e_commerce.auth_service.util.JwtUtil;
 
-import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return "Email already used";
+    public ResponseEntity<?> register(@RequestBody User user) {
+        try {
+            User savedUser = userService.register(user);
+            return ResponseEntity.ok("Đăng ký thành công");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-        User user = User.builder()
-                .email(request.getEmail())
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .build();
-
-        userRepository.save(user);
-        return "Register success";
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest request) {
-        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                return jwtUtil.generateToken(user.getEmail());
-            }
-        }
-        return "Invalid credentials";
-    }
-
-    @GetMapping("/me")
-    public String me(@RequestHeader("Authorization") String header) {
-        String token = header.replace("Bearer ", "");
-        return "Logged in as: " + jwtUtil.extractEmail(token);
+    public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
+        );
+        String token = jwtUtil.generateToken(authRequest.getEmail());
+        return ResponseEntity.ok(new AuthResponse(token));
     }
 }

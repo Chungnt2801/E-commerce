@@ -2,33 +2,19 @@ server:
   port: 8081
 
 spring:
-  application:
-    name: auth-service
-
   datasource:
     url: jdbc:postgresql://192.168.1.100:5432/ecommerce_auth
     username: postgres
     password: chungnt
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
-
-  cloud:
-    gateway:
-      routes:
-        - id: auth-service
-          uri: lb://auth-service
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - StripPrefix=2
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
-  secret: your_jwt_secret_key
-  expiration: 86400000 # 1 ngày
+  secret: your_very_long_and_secure_secret_key_which_is_at_least_64_characters_long_to_meet_hs512_requirements
+  expiration: 3600000
