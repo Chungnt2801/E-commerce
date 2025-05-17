@@ -1,5 +1,6 @@
 package chungnt.own.vn.e_commerce.auth_service.service;
 
+import chungnt.own.vn.e_commerce.auth_service.entity.Role;
 import chungnt.own.vn.e_commerce.auth_service.entity.User;
 import chungnt.own.vn.e_commerce.auth_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ public class UserService implements UserDetailsService {
             throw new RuntimeException("Email đã tồn tại");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(Role.USER); // Gán vai trò mặc định là USER
         return userRepository.save(user);
     }
 
